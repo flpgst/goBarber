@@ -8,7 +8,7 @@ class ScheduleControler {
     const checkUserProvider = await User.findOne({
       where: { id: req.userId, provider: true }
     })
-    console.log(checkUserProvider)
+
     if (!checkUserProvider) {
       return res
         .status(400)
