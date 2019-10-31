@@ -61,6 +61,12 @@ class AppointmentController {
         .json({ error: 'Agendamentos só podem ser efetuados com Providers' })
     }
 
+    if (req.userId === parseInt(provider_id, 10)) {
+      return res.status(401).json({
+        error: 'Agendamentos não podem ser efetuados para o usuário logado'
+      })
+    }
+
     const hourStart = startOfHour(parseISO(date))
 
     if (isBefore(hourStart, new Date())) {
