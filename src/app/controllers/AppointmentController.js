@@ -6,7 +6,8 @@ import User from '../models/User'
 import Appointment from '../models/Appointment'
 import File from '../models/File'
 import Notification from '../schemas/Notification'
-import Mail from '../../lib/Mail'
+import Queue from '../../lib/Queue'
+import CancellationMail from '../jobs/CancellationMail'
 
 class AppointmentController {
   async index(req, res) {
@@ -138,7 +139,7 @@ class AppointmentController {
         .json({ error: 'Acesso negado para cancelar este agendamento' })
     }
 
-    const minDate = subHours(appointment.date, 2)
+    const minDate = subHours(parseISO(appointment.date), 2)
 
     if (isBefore(minDate, new Date())) {
       return res.status(401).json({
@@ -150,21 +151,8 @@ class AppointmentController {
 
     await appointment.save()
 
-    await Mail.sendMail({
-      to: `${appointment.provider.name} <${appointment.provider.email}>`,
-      subject: 'Agendamento Cancelado',
-      template: 'cancellation',
-      context: {
-        provider: appointment.provider.name,
-        user: appointment.user.name,
-        date: format(
-          parseISO(appointment.date),
-          "'dia' dd 'de' MMMM', às' H:mm'h'",
-          {
-            locale: pt
-          }
-        )
-      }
+    await Queue.add(CancellationMail.key, {
+      appointment
     })
 
     return res.json(appointment)
